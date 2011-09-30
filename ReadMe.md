@@ -10,6 +10,8 @@ Install:
 ~/.todoistCliCfg example:
 
     {
-       "api_token":"xxx",
-       "project_id":123 (must larger than 4)
+        //Your todoist API
+        "api_token":"xxx",
+        //The -i option default project id
+        "project_id":123 (must larger than 4)
     }
