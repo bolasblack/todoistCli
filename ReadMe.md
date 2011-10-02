@@ -12,7 +12,7 @@ Install:
         "api_token":"xxx",
         //The -i option default project id
         "project_id":123 (must larger than 4), 
-        //Can alisa project id
+        //Alisa project id
         "alisa":{
             "test":1350142
         }
