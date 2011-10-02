@@ -6,17 +6,10 @@ import json
 import sys
 import os
 
-# TODO:
-# 添加本地离线支持（缓存）
+# TODO:添加本地离线支持（缓存）
 #   用户 -i 时能够立刻列出来
 #   用户 action 了以后自动更新缓存
 #   离线的时候使用缓存，能上网了再和服务器交互
-# 简化 action 的复杂度（ID 都太长啦）
-
-#help:
-#   sudo -s
-#   cp todoistCli.py /usr/bin/todoist
-#   chmod 755 /usr/bin/todoist
 
 class ProjectIdEmptyError( Exception ): #{{{
     def __init__( self, message = None ):
@@ -102,20 +95,25 @@ def actionItems( apiToken, itemIds, action = 'complete'): #{{{
     return result
 #}}}
 
-def addItem( apiToken, content, projectId, priority = 4 ): #{{{
+def addItem( apiToken, itemParams ): #{{{
     # =======================================
     # @Description:addItem 
     #
     # @Param:str apiToken
-    # @Param:str projectId
-    # @Param:str content
-    # @Param:str priority
+    # @Param:dict itemParams = {'project_id':..., 
+    #                           'priority':..., 
+    #                           'content':...}
     #
     # @return dict or str
     # =======================================
+    projectId = itemParams['project_id']
     assert type(projectId) == int, 'projectId must be int'
-    priority = priority or 4
+    try:
+        priority = itemParams['priority']
+    except KeyError:
+        priority = 4
     assert type(priority) == int, 'priority must be int'
+    content = itemParams['content']
     priorityLv = [4, 3, 2, 1][priority - 1] #API的priority正好和web端相反
     apiUrlStr = 'addItem'
     paramsDict = {'token':apiToken, 
@@ -149,38 +147,106 @@ def request( apiUrlStr, paramsDict ): #{{{
 #}}}
 
 
-def addItemByArgvs(apiToken, argvs): #{{{
-    if type(argvs[1]) is str:
-    # case: -a 'content'
-        priority = None
-        projectId = config['project_id']
-        content = argvs[1]
-    elif int(argvs[1]) < 5: 
-    # case: -a priority 'content'
-        try:
-            projectId = config['project_id']
-        except KeyError:
-            raise ProjectIdEmptyError
-        priority = int(argvs[1])
-        content = argvs[2]
-    elif int(argvs[1]) > 4: 
-    # case: -a projID X X
-        projectId = argvs[1]
-        if argvs[2] is str: 
-        # case: -a projID 'content'
-            priority = None
-            content = argvs[2]
+def aliasFilter( aliasName ): #{{{
+    try:
+        config = getUserConfig()
+        aliasDict = config['alias']
+    except KeyError:
+        return aliasName
+    else:
+        for k in aliasDict.keys():
+            try:
+                int(k)
+                raise Exception, 'Project id alias must be string'
+            except ValueError:
+                pass
+        if aliasName in aliasDict.keys():
+            return aliasDict[aliasName]
         else:
-        #case: -a projID priority 'content'
-            priority = int(argvs[2]) or None
-            content = argvs[3]
-    return addItem(apiToken, content, projectId, priority)
+            return aliasName
 #}}}
 
-def listItem(apiToken, argvs): #{{{
-    if len(argvs) > 1:
-        projectId = argvs[1]
+def addItemByArgvs( apiToken, argvs, config ): #{{{
+    # case: -a 'content' or 'content'
+    def contentHandler( argvs ): #{{{
+        priority = None
+        projectId = config['project_id']
+        content = argvs[0] if not argvs[0] == '-a' else argvs[1]
+        return {'project_id':projectId, 
+                'priority':priority, 
+                'content':content}
+    #}}}
+
+    # case: X X 'content'
+    def argvsHandler( argvs ): #{{{
+        try:
+            if int(argvs[0]) < 5:
+            # case: priority X 'content'
+                itemParams = priorityHandler(argvs)
+            else:
+            # case: projID X 'content'
+                itemParams = projIDHandler(argvs)
+        except ValueError:
+         # case: projAlias X 'content'
+            argvs[0] = aliasFilter(argvs[0])
+            itemParams = projIDHandler(argvs)
+        finally:
+            return itemParams
+    #}}}
+        
+    # case: priority X X
+    def priorityHandler( argvs ): #{{{
+        priority = int(argvs[0])
+        if len(argvs) < 3:
+        # case: priority 'content'
+            try:
+                projectId = config['project_id']
+            except KeyError:
+                raise ProjectIdEmptyError
+            content = argvs[1]
+        else:
+        # case: priority projectId 'content'
+            projectId = argvs[1]
+            content = argvs[2]
+        return {'project_id':projectId, 
+                'priority':priority, 
+                'content':content}
+    #}}}
+
+    # case: projID X X
+    def projIDHandler( argvs ): #{{{
+        projectId = argvs[0]
+        if argvs[1] is str: 
+        # case: projID 'content'
+            priority = None
+            content = argvs[1]
+        else:
+        #case: projID priority 'content'
+            priority = int(argvs[1]) or None
+            content = argvs[2]
+        return {'project_id':projectId, 
+                'priority':priority, 
+                'content':content}
+    #}}}
+
+    if len(argvs) < 3:
+    # case: 'content' or -a 'content'
+        itemParams = contentHandler(argvs)
+    elif not argvs[0] == '-a':
+    # case: X X 'content'
+        itemParams = argvsHandler(argvs)
     else:
+    # case: -a X X 'content'
+        itemParams = argvsHandler(argvs[1:])
+    return addItem(apiToken, itemParams)
+#}}}
+
+def listItem( apiToken, argvs ): #{{{
+    if len(argvs) > 1:
+    # case: -l test/123456
+        projectId = aliasFilter(argvs[1])
+    else:
+    # case: -l
         try:
             projectId = config['project_id']
         except KeyError:
@@ -210,12 +276,10 @@ def actionByArgv( config, argvs ): #{{{
     # ======================================= }}}
     apiToken = config['api_token']
     actionArgvDict = {'-c':'complete', '-u':'uncomplete', '-d':'delete'}
-    if len(argvs) is 0 or argvs[0] == '-i':
+    if len(argvs) == 0 or argvs[0] == '-l':
         listItem(apiToken, argvs)
     elif argvs[0] == '-p':
         print showProjectsList(apiToken)
-    elif argvs[0] == '-a':
-        print addItemByArgvs(apiToken, argvs)
     elif argvs[0] == '-t':
         email = argvs[1]
         password = argvs[2]
@@ -227,9 +291,19 @@ def actionByArgv( config, argvs ): #{{{
             intId = int(id)
             idsList.append(intId)
         print actionItems(apiToken, idsList, action)
-    else:
-        helpStr = '-h 帮助\n-p 列出项目表\n-i project id 列出项目里的 item\n-a project priority content 在某个项目里添加 item\n-c item ids 完成若干 items\n-u item ids 取消完成若干 items\n-d item ids 删除若干 items\n-t email password 获取 api'
+    elif argvs[0] == '-h':
+        helpStr = '''Usage:
+        [-l] [Project id] 列出项目里的 Item
+        -p 列出 Project 和 Project id
+        -a [Project id] [priority] content 在某个项目里添加 Item
+        -c Item ids 完成若干 Items
+        -u Item ids 取消完成若干 Items
+        -d Item ids 删除若干 Items
+        -t email password 获取 Api Token
+        -h 帮助'''
         print helpStr
+    else: # 其他任意字符串，包括 -a
+        print addItemByArgvs(apiToken, argvs, config)
 #}}}
 
 def getUserConfig(): #{{{
