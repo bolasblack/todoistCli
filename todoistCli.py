@@ -7,7 +7,11 @@ import sys
 import os
 
 # TODO:
-# 添加本地离线支持
+# 添加本地离线支持（缓存）
+#   用户 -i 时能够立刻列出来
+#   用户 action 了以后自动更新缓存
+#   离线的时候使用缓存，能上网了再和服务器交互
+# 简化 action 的复杂度（ID 都太长啦）
 
 #help:
 #   sudo -s
@@ -206,10 +210,10 @@ def actionByArgv( config, argvs ): #{{{
     # ======================================= }}}
     apiToken = config['api_token']
     actionArgvDict = {'-c':'complete', '-u':'uncomplete', '-d':'delete'}
-    if argvs[0] == '-p':
-        print showProjectsList(apiToken)
-    elif argvs[0] == '-i':
+    if len(argvs) is 0 or argvs[0] == '-i':
         listItem(apiToken, argvs)
+    elif argvs[0] == '-p':
+        print showProjectsList(apiToken)
     elif argvs[0] == '-a':
         print addItemByArgvs(apiToken, argvs)
     elif argvs[0] == '-t':
@@ -247,10 +251,9 @@ def getUserConfig(): #{{{
 #}}}
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        argvs = sys.argv[1:]
-        try:
-            config = getUserConfig()
-            actionByArgv(config, argvs)
-        except Exception, e:
-            os.system('echo -e "\e[41;37mError: ' + str(e) + '\e[0m"')
+    argvs = sys.argv[1:]
+    try:
+        config = getUserConfig()
+        actionByArgv(config, argvs)
+    except Exception, e:
+        os.system('echo -e "\e[41;37mError: ' + str(e) + '\e[0m"')
