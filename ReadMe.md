@@ -14,7 +14,7 @@ Install:
         "project_id":123 (must larger than 4), 
         //Can alisa project id
         "alisa":{
-            "test":"1350142"
+            "test":1350142
         }
     }
 

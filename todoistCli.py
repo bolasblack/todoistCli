@@ -260,15 +260,6 @@ def actionByArgv( config, argvs ): #{{{
     # ======================================= {{{
     # @Description:call function by argv
     #
-    # -h 帮助
-    # -p 列出项目表
-    # -i project id 列出项目里的 item
-    # -a project priority content 在某个项目里添加 item
-    # -c item ids 完成若干 items
-    # -u item ids 取消完成若干 items
-    # -d item ids 删除若干 items
-    # -t email password 获取 api
-    #
     # @Param:config dict 配置文件的配置
     # @Param:argvs str 启动参数
     #
