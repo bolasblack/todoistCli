@@ -108,10 +108,7 @@ def addItem( apiToken, itemParams ): #{{{
     # =======================================
     projectId = itemParams['project_id']
     assert type(projectId) == int, 'projectId must be int'
-    try:
-        priority = itemParams['priority']
-    except KeyError:
-        priority = 4
+    priority = itemParams['priority'] or 4
     assert type(priority) == int, 'priority must be int'
     content = itemParams['content']
     priorityLv = [4, 3, 2, 1][priority - 1] #API的priority正好和web端相反
@@ -186,11 +183,11 @@ def addItemByArgvs( apiToken, argvs, config ): #{{{
             else:
             # case: projID X 'content'
                 itemParams = projIDHandler(argvs)
+            return itemParams
         except ValueError:
          # case: projAlias X 'content'
             argvs[0] = aliasFilter(argvs[0])
             itemParams = projIDHandler(argvs)
-        finally:
             return itemParams
     #}}}
         
@@ -216,7 +213,7 @@ def addItemByArgvs( apiToken, argvs, config ): #{{{
     # case: projID X X
     def projIDHandler( argvs ): #{{{
         projectId = argvs[0]
-        if argvs[1] is str: 
+        if type(argvs[1]) is str: 
         # case: projID 'content'
             priority = None
             content = argvs[1]
