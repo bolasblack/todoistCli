@@ -11,15 +11,17 @@ import os
 #   用户 action 了以后自动更新缓存
 #   离线的时候使用缓存，能上网了再和服务器交互
 
-class ProjectIdEmptyError( Exception ): #{{{
-    def __init__( self, message = None ):
+
+class ProjectIdEmptyError(Exception):  # [[[
+    def __init__(self, message=None):
         self.message = message
 
-    def __str__( self ):
+    def __str__(self):
         return self.message or 'Need project id'
-#}}}
+# ]]]
 
-def showApiToken( email, password ): #{{{
+
+def showApiToken(email, password):  # [[[
     # =======================================
     # @Description:return api_token
     #
@@ -29,29 +31,31 @@ def showApiToken( email, password ): #{{{
     # @return str
     # =======================================
     apiUrlStr = 'login'
-    paramsDict = {'email':email, 'password':password}
+    paramsDict = {'email': email, 'password': password}
     jsonData = request(apiUrlStr, paramsDict)
     return jsonData['api_token']
-#}}}
+# ]]]
 
-def showProjectsList( apiToken ): #{{{
+
+def showProjectsList(apiToken):  # [[[
     # =======================================
     # @Description:return project id and name list
     #
-    # @Param:str apiToken 
+    # @Param:str apiToken
     #
     # @return str
     # =======================================
     apiUrlStr = 'getProjects'
-    paramsDict = {'token':apiToken}
+    paramsDict = {'token': apiToken}
     jsonData = request(apiUrlStr, paramsDict)
     projectList = "Project Id:\tName:\n"
     for project in jsonData:
         projectList += str(project['id']) + '\t\t' + project['name'] + '\n'
     return projectList
-#}}}
+# ]]]
 
-def showItemsList( apiToken, projectId, isUncompletedItems = True ): #{{{
+
+def showItemsList(apiToken, projectId, isUncompletedItems=True):  # [[[
     # =======================================
     # @Description:return items list in a project
     #
@@ -63,18 +67,19 @@ def showItemsList( apiToken, projectId, isUncompletedItems = True ): #{{{
     # =======================================
     assert type(projectId) == int, 'projectId must be int'
     apiUrlStr = 'getUncompletedItems' if isUncompletedItems else 'getCompletedItems'
-    paramsDict = {'token':apiToken, 'project_id':projectId}
+    paramsDict = {'token': apiToken, 'project_id': projectId}
     jsonData = request(apiUrlStr, paramsDict)
     itemsListStr = ' Item Id\tContent\n'
     for item in jsonData:
-        colorDict = {'4':'31', '3':'34', '2':'32', '1':'0;0;0'}
+        colorDict = {'4': '31', '3': '34', '2': '32', '1': '0;0;0'}
         colorId = '\e[0;0;0m ' + str(item['id'])
         colorfulItem = '\e[' + colorDict[str(item['priority'])] + 'm ' + item['content']
         itemsListStr += colorId + '\t' + colorfulItem + '\n'
     return itemsListStr
-#}}}
+# ]]]
 
-def actionItems( apiToken, itemIds, action = 'complete'): #{{{
+
+def actionItems(apiToken, itemIds, action='complete'):  # [[[
     # =======================================
     # @Description:make items complete/uncomplete
     #
@@ -86,22 +91,23 @@ def actionItems( apiToken, itemIds, action = 'complete'): #{{{
     # =======================================
     for itemId in itemIds:
         assert type(itemId) == int, 'itemId must be int'
-    actionDict = {'complete':'completeItems', 
-                  'uncomplete':'uncompleteItems', 
-                  'delete':'deleteItems'}
+    actionDict = {'complete': 'completeItems',
+                  'uncomplete': 'uncompleteItems',
+                  'delete': 'deleteItems'}
     apiUrlStr = actionDict[action]
-    paramsDict = {'token':apiToken, 'ids':itemIds}
+    paramsDict = {'token': apiToken, 'ids': itemIds}
     result = request(apiUrlStr, paramsDict)
     return result
-#}}}
+# ]]]
 
-def addItem( apiToken, itemParams ): #{{{
+
+def addItem(apiToken, itemParams):  # [[[
     # =======================================
-    # @Description:addItem 
+    # @Description:addItem
     #
     # @Param:str apiToken
-    # @Param:dict itemParams = {'project_id':..., 
-    #                           'priority':..., 
+    # @Param:dict itemParams = {'project_id':...,
+    #                           'priority':...,
     #                           'content':...}
     #
     # @return dict or str
@@ -113,17 +119,18 @@ def addItem( apiToken, itemParams ): #{{{
     content = itemParams['content']
     priorityLv = [4, 3, 2, 1][priority - 1] #API的priority正好和web端相反
     apiUrlStr = 'addItem'
-    paramsDict = {'token':apiToken, 
-                  'project_id':projectId, 
-                  'content':content, 
-                  'priority':priorityLv}
+    paramsDict = {'token': apiToken,
+                  'project_id': projectId,
+                  'content': content,
+                  'priority': priorityLv}
     result = request(apiUrlStr, paramsDict)
     return result
-#}}}
+# ]]]
 
-def request( apiUrlStr, paramsDict ): #{{{
+
+def request(apiUrlStr, paramsDict):  # [[[
     # =======================================
-    # @Description:request 
+    # @Description:request
     #
     # @Param:str apiUrlStr
     # @Param:dict paramsDict
@@ -141,41 +148,40 @@ def request( apiUrlStr, paramsDict ): #{{{
         result = response
     finally:
         return result
-#}}}
+# ]]]
 
 
-def aliasFilter( aliasName ): #{{{
-    try:
-        config = getUserConfig()
+def aliasFilter(aliasName):  # [[[
+    def checkIdAliasValidity(input):
+        try:
+            int(k)
+            raise Exception('Project alias id must be string')
+        except ValueError:
+            pass
+
+    config = getUserConfig()
+    if 'alias' in config.keys():
         aliasDict = config['alias']
-    except KeyError:
-        return aliasName
+        map(checkIdAliasValidity, aliasDict.keys())
+        return aliasDict if aliasName in aliasDict.keys() else aliasName
     else:
-        for k in aliasDict.keys():
-            try:
-                int(k)
-                raise Exception, 'Project id alias must be string'
-            except ValueError:
-                pass
-        if aliasName in aliasDict.keys():
-            return aliasDict[aliasName]
-        else:
-            return aliasName
-#}}}
+        return aliasName
+# ]]]
 
-def addItemByArgvs( apiToken, argvs, config ): #{{{
+
+def addItemByArgvs(apiToken, argvs, config):  # [[[
     # case: -a 'content' or 'content'
-    def contentHandler( argvs ): #{{{
+    def contentHandler(argvs):  # [[[
         priority = None
         projectId = config['project_id']
         content = argvs[0] if not argvs[0] == '-a' else argvs[1]
         return {'project_id':projectId, 
                 'priority':priority, 
                 'content':content}
-    #}}}
+    # ]]]
 
     # case: X X 'content'
-    def argvsHandler( argvs ): #{{{
+    def argvsHandler(argvs):  # [[[
         try:
             if int(argvs[0]) < 5:
             # case: priority X 'content'
@@ -189,10 +195,10 @@ def addItemByArgvs( apiToken, argvs, config ): #{{{
             argvs[0] = aliasFilter(argvs[0])
             itemParams = projIDHandler(argvs)
             return itemParams
-    #}}}
-        
+    # ]]]
+
     # case: priority X X
-    def priorityHandler( argvs ): #{{{
+    def priorityHandler(argvs):  # [[[
         priority = int(argvs[0])
         if len(argvs) < 3:
         # case: priority 'content'
@@ -208,10 +214,10 @@ def addItemByArgvs( apiToken, argvs, config ): #{{{
         return {'project_id':projectId, 
                 'priority':priority, 
                 'content':content}
-    #}}}
+    # ]]]
 
     # case: projID X X
-    def projIDHandler( argvs ): #{{{
+    def projIDHandler(argvs):  # [[[
         projectId = argvs[0]
         if type(argvs[1]) is str: 
         # case: projID 'content'
@@ -224,7 +230,7 @@ def addItemByArgvs( apiToken, argvs, config ): #{{{
         return {'project_id':projectId, 
                 'priority':priority, 
                 'content':content}
-    #}}}
+    # ]]]
 
     if len(argvs) < 3:
     # case: 'content' or -a 'content'
@@ -236,9 +242,10 @@ def addItemByArgvs( apiToken, argvs, config ): #{{{
     # case: -a X X 'content'
         itemParams = argvsHandler(argvs[1:])
     return addItem(apiToken, itemParams)
-#}}}
+# ]]]
 
-def listItem( apiToken, argvs ): #{{{
+
+def listItem(apiToken, argvs):  # [[[
     if len(argvs) > 1:
     # case: -l test/123456
         projectId = aliasFilter(argvs[1])
@@ -250,10 +257,11 @@ def listItem( apiToken, argvs ): #{{{
             raise ProjectIdEmptyError
     taskStr = showItemsList(apiToken, projectId).encode('utf-8')
     taskStr = taskStr.replace('"', '\\"')
-    os.system('echo -e "' + taskStr + '"') 
-#}}}
+    os.system('echo -e "' + taskStr + '"')
+# ]]]
 
-def actionByArgv( config, argvs ): #{{{
+
+def actionByArgv(config, argvs):  # [[[
     # ======================================= {{{
     # @Description:call function by argv
     #
@@ -263,7 +271,7 @@ def actionByArgv( config, argvs ): #{{{
     # @return None
     # ======================================= }}}
     apiToken = config['api_token']
-    actionArgvDict = {'-c':'complete', '-u':'uncomplete', '-d':'delete'}
+    actionArgvDict = {'-c': 'complete', '-u': 'uncomplete', '-d': 'delete'}
     if len(argvs) == 0 or argvs[0] == '-l':
         listItem(apiToken, argvs)
     elif argvs[0] == '-p':
@@ -292,9 +300,10 @@ def actionByArgv( config, argvs ): #{{{
         print helpStr
     else: # 其他任意字符串，包括 -a
         print addItemByArgvs(apiToken, argvs, config)
-#}}}
+# ]]]
 
-def getUserConfig(): #{{{
+
+def getUserConfig():  # [[[
     # =======================================
     # @Description:get user's config file content
     #
@@ -310,7 +319,7 @@ def getUserConfig(): #{{{
     with open(configFilePath) as f:
         config = json.loads(f.read())
     return config
-#}}}
+# ]]]
 
 if __name__ == "__main__":
     argvs = sys.argv[1:]
