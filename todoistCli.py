@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
+import argparse
 import urllib2
 import urllib
 import json
@@ -261,6 +262,22 @@ def listItem(apiToken, argvs):  # [[[
 # ]]]
 
 
+def parseArgs(): # [[[
+    parser = argparse.ArgumentParser(description=u"一个简易的 todoist cli 客户端")
+    parser.add_argument("--token", metavar=("Username", "Password"), dest="accountInfo", nargs=2, help=u"输入账号密码，获取账号的 token")
+
+    parser.add_argument("-l", "--list", action="store_true", dest="listItems", help=u"列出指定项目的待办事项")
+    parser.add_argument("-p", "--proj", metavar="ProjectId", dest="listProjects", nargs="*", help=u"指定项目别名或者项目ID，如果没有传入参数，那么就会列出所有的项目和项目ID")
+
+    actionGroup = parser.add_mutually_exclusive_group()
+    actionGroup.add_argument("-c", "--cpl", metavar="ItemId", dest="completeItems", nargs="+", type=int, help=u"将若干Item标记为完成")
+    actionGroup.add_argument("-u", "--ucpl", metavar="ItemId", dest="unCompleteItems", nargs="+", type=int, help=u"将若干Item标记为未完成状态")
+    actionGroup.add_argument("-d", "--del", metavar="ItemId", dest="deleteItems", nargs="+", type=int, help=u"删除若干个Item")
+
+    return parser
+# ]]]
+
+
 def actionByArgv(config, argvs):  # [[[
     # ======================================= {{{
     # @Description:call function by argv
@@ -322,9 +339,11 @@ def getUserConfig():  # [[[
 # ]]]
 
 if __name__ == "__main__":
-    argvs = sys.argv[1:]
-    try:
-        config = getUserConfig()
-        actionByArgv(config, argvs)
-    except Exception, e:
-        os.system('echo -e "\e[41;37mError: ' + str(e) + '\e[0m"')
+    parser = parseArgs()
+    print(parser.parse_args())
+    #argvs = sys.argv[1:]
+    #try:
+        #config = getUserConfig()
+        #actionByArgv(config, argvs)
+    #except Exception(e):
+        #os.system('echo -e "\e[41;37mError: ' + str(e) + '\e[0m"')
