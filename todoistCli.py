@@ -175,9 +175,9 @@ def addItemByArgvs(apiToken, argvs, config):  # [[[
         priority = None
         projectId = config['project_id']
         content = argvs[0] if not argvs[0] == '-a' else argvs[1]
-        return {'project_id':projectId, 
-                'priority':priority, 
-                'content':content}
+        return {'project_id': projectId,
+                'priority': priority,
+                'content': content}
     # ]]]
 
     # case: X X 'content'
@@ -211,15 +211,15 @@ def addItemByArgvs(apiToken, argvs, config):  # [[[
         # case: priority projectId 'content'
             projectId = argvs[1]
             content = argvs[2]
-        return {'project_id':projectId, 
-                'priority':priority, 
-                'content':content}
+        return {'project_id': projectId,
+                'priority': priority,
+                'content': content}
     # ]]]
 
     # case: projID X X
     def projIDHandler(argvs):  # [[[
         projectId = argvs[0]
-        if type(argvs[1]) is str: 
+        if type(argvs[1]) is str:
         # case: projID 'content'
             priority = None
             content = argvs[1]
@@ -227,9 +227,9 @@ def addItemByArgvs(apiToken, argvs, config):  # [[[
         #case: projID priority 'content'
             priority = int(argvs[1]) or None
             content = argvs[2]
-        return {'project_id':projectId, 
-                'priority':priority, 
-                'content':content}
+        return {'project_id': projectId,
+                'priority': priority,
+                'content': content}
     # ]]]
 
     if len(argvs) < 3:
