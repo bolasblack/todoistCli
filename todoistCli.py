@@ -222,6 +222,7 @@ def actionByArgv(config, args):  # [[[
     if 'api_token' not in config:
         raise ApiTokenEmptyError
     apiToken = config['api_token']
+    projectId = False
     accountInfo = args.accountInfo
     projectNameList = args.projectNameList
     taskContentList = args.taskContent
@@ -248,10 +249,9 @@ def actionByArgv(config, args):  # [[[
         if actionTodoArgs and len(actionTodoArgs) > 0:
             return actionTasks(apiToken, actionTodoArgs, actionTodoName)
     # list tasks
-    if projectId is not None:
+    if projectId:
         taskStr = showTasksList(apiToken, projectId)
         return taskStr.replace('"', '\\"')
-    pdb.set_trace()
     return False
 # ]]]
 
