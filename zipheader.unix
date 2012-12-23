@@ -1,0 +1,7 @@
+#!/bin/sh
+PYTHON=$(which python 2>/dev/null)
+if [ ! -x "$PYTHON" ] ; then
+  echo "Python executable not found - cannot continue!"
+  exit 1
+fi
+exec $PYTHON - $0 $@ << END_OF_PYTHON_CODE
