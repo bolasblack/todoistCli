@@ -137,7 +137,7 @@ def argsParser(): # [[[
     actionGroup.add_argument("-u", "--ucpl", metavar="ItemId", dest="uncompleteItems", nargs="+", type=int, help=u"将若干Item标记为未完成状态")
     actionGroup.add_argument("-d", "--del", metavar="ItemId", dest="deleteItems", nargs="+", type=int, help=u"删除若干个Item")
 
-    return parser.parse_args(args=sys.argv[2:])
+    return parser
 # ]]]
 
 
@@ -149,13 +149,21 @@ def getUserConfig():  # [[[
 # ]]]
 
 
-if __name__ == "__main__":
+def main(args):
+    parsedArgs = argsParser().parse_args(args=args)
     try:
         config = getUserConfig()
-        result = actionByArgv(config, argsParser())
+        result = actionByArgv(config, parsedArgs)
         if result is False:
             argvObj.print_help()
         else:
-            print result
+            try:
+                print result.encode('utf-8')
+            except:
+                print result
     except Exception, e:
         print colorama.Fore.RED + str(e) + colorama.Fore.RESET
+
+
+if __name__ == "__main__":
+    main(sys.argv)

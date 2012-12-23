@@ -5,3 +5,8 @@ if [ ! -x "$PYTHON" ] ; then
   exit 1
 fi
 exec $PYTHON - $0 $@ << END_OF_PYTHON_CODE
+import sys
+sys.path.insert(0, sys.argv[1])
+import todoistCli
+todoistCli.main(sys.argv[2:])
+END_OF_PYTHON_CODE
