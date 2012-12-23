@@ -6,6 +6,7 @@ define clean-folder
 endef
 
 install :
+	pip install -r requirements.txt
 	zip todoist.zip  todoistSDK.py
 	cat zipheader.unix todoistCli.py > todoist
 	echo "\nEND_OF_PYTHON_CODE" >> todoist
