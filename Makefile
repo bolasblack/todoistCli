@@ -1,4 +1,4 @@
-.PHONY : install clean
+.PHONY : install uninstall clean
 
 define clean-folder
 	-rm *.pyc
@@ -13,6 +13,10 @@ install :
 	chmod +x todoist
 	mv todoist /usr/sbin/
 	$(clean-folder)
+
+uninstall :
+	$(clean-folder)
+	rm /usr/sbin/todoist
 
 clean :
 	$(clean-folder)

@@ -2,8 +2,7 @@ A simple cli client for [todoist](http://todoist.com/)
 
 Install:
 
-    chmod u+x install.sh
-    sudo ./install.sh
+    sudo make install
 
 ~/.todoistCliCfg example:
 
