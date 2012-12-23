@@ -159,19 +159,19 @@ def getUserConfig():  # [[[
 
 def main(args):
     parsedArgs = argsParser().parse_args(args=args)
-    #try:
-    config = getUserConfig()
-    result = actionByArgv(config, parsedArgs)
-    if result is False:
-        argvObj.print_help()
-    else:
-        try:
-            print result.encode('utf-8')
-        except:
-            print result
-    #except Exception, e:
-        #print colorama.Fore.RED + str(e) + colorama.Fore.RESET
+    try:
+        config = getUserConfig()
+        result = actionByArgv(config, parsedArgs)
+        if result is False:
+            argvObj.print_help()
+        else:
+            try:
+                print result.encode('utf-8')
+            except:
+                print result
+    except Exception, e:
+        print colorama.Fore.RED + str(e) + colorama.Fore.RESET
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    main(sys.argv[1:])
