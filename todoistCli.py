@@ -73,8 +73,13 @@ def aliasFilter(aliasName):  # [[[
 
 def itemContentProcess(itemContent): # [[[
     priorityRE = re.compile('\s+!p(\d)(\s+|$)', re.IGNORECASE)
-    priority = priorityRE.findall(itemContent)[0][0]
-    content = priorityRE.sub("", itemContent, 1)
+    priorityMatchList = priorityRE.findall(itemContent)
+    if len(priorityMatchList):
+        priority = priorityMatchList[0][0]
+        content = priorityRE.sub("", itemContent, 1)
+    else:
+        priority = 4
+        content = itemContent
     return {
         "priority": int(priority),
         "content": content
@@ -98,14 +103,13 @@ def actionByArgv(config, args):  # [[[
             return getattr(todoist, actionTodoName + "Items")(itemId)
 
     projects = todoist.project()
-    projectId = projects[0]["id"] if len(projects) else None
+    defaultProject = config.get("default_project", None)
+    projectId = defaultProject if defaultProject else projects[0]["id"]
     projectNameList = args.projectNameList
     # 准备 projectId
     if projectNameList and len(projectNameList) > 0:
         projectName = projectNameList[0]
         projectId = aliasFilter(projectName)
-    else:
-        return showProjectsList(projects)
 
     itemContentList = args.itemContent
     # add item
@@ -114,6 +118,10 @@ def actionByArgv(config, args):  # [[[
         content = itemParams['content']
         del itemParams['content']
         return todoist.addItem(projectId, content, **itemParams)
+
+    # list projects
+    if not projectNameList:
+        return showProjectsList(projects)
 
     # list items
     if projectId:
@@ -151,18 +159,18 @@ def getUserConfig():  # [[[
 
 def main(args):
     parsedArgs = argsParser().parse_args(args=args)
-    try:
-        config = getUserConfig()
-        result = actionByArgv(config, parsedArgs)
-        if result is False:
-            argvObj.print_help()
-        else:
-            try:
-                print result.encode('utf-8')
-            except:
-                print result
-    except Exception, e:
-        print colorama.Fore.RED + str(e) + colorama.Fore.RESET
+    #try:
+    config = getUserConfig()
+    result = actionByArgv(config, parsedArgs)
+    if result is False:
+        argvObj.print_help()
+    else:
+        try:
+            print result.encode('utf-8')
+        except:
+            print result
+    #except Exception, e:
+        #print colorama.Fore.RED + str(e) + colorama.Fore.RESET
 
 
 if __name__ == "__main__":
