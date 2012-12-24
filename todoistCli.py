@@ -87,12 +87,13 @@ def itemContentProcess(itemContent): # [[[
 # ]]]
 
 
-def actionByArgv(config, args):  # [[[
+def actionByArgv(args):  # [[[
     # 获取 token
     accountInfo = args.accountInfo
     if accountInfo and len(accountInfo) is 2:
         return todoistSDK.Todoist(email=accountInfo[0], password=accountInfo[1]).apiToken
 
+    config = getUserConfig()
     apiToken = config.get('api_token', '')
     todoist = todoistSDK.Todoist(token=apiToken)
 
@@ -158,10 +159,9 @@ def getUserConfig():  # [[[
 
 
 def main(args):
-    parsedArgs = argsParser().parse_args(args=args)
     try:
-        config = getUserConfig()
-        result = actionByArgv(config, parsedArgs)
+        parsedArgs = argsParser().parse_args(args=args)
+        result = actionByArgv(parsedArgs)
         if result is False:
             argvObj.print_help()
         else:
