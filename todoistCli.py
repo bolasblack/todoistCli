@@ -1,7 +1,34 @@
 #!/usr/bin/env python
 # coding: utf-8
+"""
+一个简易的 todoist cli 客户端
+
+Usage:
+  todoist [-l]
+  todoist -p <project>
+  todoist [-p <project>] <content>
+  todoist [-p <project>] -a <content>
+  todoist -c <item> [<item>...]
+  todoist -u <item> [<item>...]
+  todoist -d <item> [<item>...]
+  todoist --token <email> <password>
+  todoist -h | --help
+  todoist --version
+
+Options:
+  -h, --help                  显示帮助信息
+  -l, --list                  列出所有的项目
+  -p, --proj <project>        用于配合 -a 指定项目别名或者项目ID，如果没有其他参数，那么就列出该项目的待办事项，如果 -p 没有传入参数，那么就会列出所有的项目和项目ID
+  -a, --add <content>         添加待办事项，如果不传入项目ID，则添加至列表最上方的项目
+  -c, --cpl <item> ...        将若干Item标记为完成
+  -u, --ucpl <item> ...       将若干Item标记为未完成状态
+  -d, --del <item> ...        删除若干个Item
+  --token <email> <password>  输入账号密码，获取账号的 token
+  --version                   输出版本号
+"""
+
+from docopt import docopt
 import todoistSDK
-import argparse
 import colorama
 import json
 import sys
@@ -12,6 +39,9 @@ import re
 #   用户 -i 时能够立刻列出来
 #   用户 action 了以后自动更新缓存
 #   离线的时候使用缓存，能上网了再和服务器交互
+
+
+debugMode = False
 
 
 # [[[ Error
@@ -41,7 +71,7 @@ class ApiTokenEmptyError(TodoistError):
 # ]]]
 
 
-def showProjectsList(projects):  # [[[
+def showProjectsList(projects): # [[[
     projectList = "Project Id:\tName:\n"
     for project in projects:
         projectList += str(project['id']) + '\t\t' + project['name'] + '\n'
@@ -49,7 +79,7 @@ def showProjectsList(projects):  # [[[
 # ]]]
 
 
-def showItemsList(todoist, projectId, isUncompletedItems=True):  # [[[
+def showItemsList(todoist, projectId, isUncompletedItems=True): # [[[
     itemsListStr = 'Item Id\t\tContent\n'
     todoistAttr = "uncompletedItems" if isUncompletedItems else 'completedItems'
     colorDict = [
@@ -66,7 +96,7 @@ def showItemsList(todoist, projectId, isUncompletedItems=True):  # [[[
 # ]]]
 
 
-def aliasFilter(aliasName):  # [[[
+def aliasFilter(aliasName): # [[[
     return getUserConfig().get('alias', {}).get(aliasName, aliasName)
 # ]]]
 
@@ -87,42 +117,79 @@ def itemContentProcess(itemContent): # [[[
 # ]]]
 
 
-def actionByArgv(args):  # [[[
+def addItem(todoist, projectId, itemContent): # [[[
+    itemParams = itemContentProcess(itemContent)
+    content = itemParams['content']
+    del itemParams['content']
+    return todoist.addItem(projectId, content, **itemParams)
+# ]]]
+
+
+def getUserConfig(): # [[[
+    configFilePath = os.path.expanduser('~/.todoistCliCfg')
+    with open(configFilePath) as f:
+        config = json.loads(f.read())
+    return config or {}
+# ]]]
+
+
+def getTodoist(**kwargs): # [[[
+    global debugMode
+
+    if "email" in kwargs and "password" in kwargs:
+        return todoistSDK.Todoist(
+          email=kwargs['email'],
+          password=kwargs['password'],
+          debugMode=debugMode
+        )
+
+    apiToken = getUserConfig().get('api_token', '')
+    return todoistSDK.Todoist(
+      debugMode=debugMode,
+      token=apiToken
+    )
+# ]]]
+
+
+def actionByArgv(args): # [[[
     # 获取 token
-    accountInfo = args.accountInfo
-    if accountInfo and len(accountInfo) is 2:
-        return todoistSDK.Todoist(email=accountInfo[0], password=accountInfo[1]).apiToken
+    email = args['--token']
+    password = args['<password>']
+    if email and password:
+        return getTodoist(email=email, password=password).apiToken
 
     config = getUserConfig()
-    apiToken = config.get('api_token', '')
-    todoist = todoistSDK.Todoist(token=apiToken)
+    todoist = getTodoist()
 
     # item action
-    for actionTodoName in ["complete", "uncomplete", "delete"]:
-        itemId = getattr(args, actionTodoName + "Items")
-        if itemId:
-            return getattr(todoist, actionTodoName + "Items")(itemId)
+    optionDict = {
+        "--cpl": "completeItems",
+        "--ucpl": "uncompleteItems",
+        "--del": "deleteItems"
+    }
+    for option in optionDict.keys():
+        if args[option]:
+            itemIds = args['<item>'] or []
+            itemIds.append(args[option])
+            itemIds = map(int, itemIds)
+            return getattr(todoist, optionDict[option])(itemIds)
 
     projects = todoist.project()
-    defaultProject = config.get("default_project", None)
-    projectId = defaultProject if defaultProject else projects[0]["id"]
-    projectNameList = args.projectNameList
-    # 准备 projectId
-    if projectNameList and len(projectNameList) > 0:
-        projectName = projectNameList[0]
-        projectId = aliasFilter(projectName)
-
-    itemContentList = args.itemContent
-    # add item
-    if itemContentList and len(itemContentList) > 0 and projectId:
-        itemParams = itemContentProcess(itemContentList[0])
-        content = itemParams['content']
-        del itemParams['content']
-        return todoist.addItem(projectId, content, **itemParams)
-
-    # list projects
-    if not projectNameList:
+    if args['--list']:
         return showProjectsList(projects)
+
+    defaultProjectId = config.get("default_project", None)
+    projectId = args['--proj']
+    # 准备 projectId
+    if projectId is None:
+        projectId = defaultProjectId if defaultProjectId else projects[0]["id"]
+    else:
+        projectId = aliasFilter(projectId)
+
+    # add item
+    itemContent = args['--add'] or args['<content>']
+    if itemContent and projectId:
+        addItem(todoist, projectId, itemContent)
 
     # list items
     if projectId:
@@ -133,42 +200,27 @@ def actionByArgv(args):  # [[[
 # ]]]
 
 
-def argsParser(): # [[[
-    parser = argparse.ArgumentParser(description=u"一个简易的 todoist cli 客户端")
-    parser.add_argument("--token", metavar=("Email", "Password"), dest="accountInfo", nargs=2, help=u"输入账号密码，获取账号的 token")
-
-    # TODO: 需要有个默认的优先级和项目，这样才能快速添加
-    parser.add_argument("-a", "--add", metavar="item content", dest="itemContent", nargs=1, help=u"添加待办事项，支持部分 Web App 语法 （目前只支持设定 priority ）")
-    parser.add_argument("-p", "--proj", metavar="ProjectId", dest="projectNameList", nargs="*", help=u"用于配合 -a -c -u -d 指定项目别名或者项目ID，如果没有其他参数，那么就列出该项目的待办事项，如果 -p 没有传入参数，那么就会列出所有的项目和项目ID")
-
-    actionGroup = parser.add_mutually_exclusive_group()
-    actionGroup.add_argument("-c", "--cpl", metavar="ItemId", dest="completeItems", nargs="+", type=int, help=u"将若干Item标记为完成")
-    actionGroup.add_argument("-u", "--ucpl", metavar="ItemId", dest="uncompleteItems", nargs="+", type=int, help=u"将若干Item标记为未完成状态")
-    actionGroup.add_argument("-d", "--del", metavar="ItemId", dest="deleteItems", nargs="+", type=int, help=u"删除若干个Item")
-
-    return parser
-# ]]]
-
-
-def getUserConfig():  # [[[
-    configFilePath = os.path.expanduser('~/.todoistCliCfg')
-    with open(configFilePath) as f:
-        config = json.loads(f.read())
-    return config or {}
-# ]]]
-
-
 def main(args):
+    global debugMode
+
+    if len(args) and args[0] == '--debug':
+        debugMode = True
+        del args[0]
     try:
-        parsedArgs = argsParser().parse_args(args=args)
+        parsedArgs = docopt(__doc__, argv=args, help=True, version='0.0.1')
+        if debugMode:
+            print parsedArgs
+
+        if not len(args):
+            parsedArgs['--list'] = True
         result = actionByArgv(parsedArgs)
         if result is False:
-            argvObj.print_help()
-        else:
-            try:
-                print result.encode('utf-8')
-            except:
-                print result
+            print __doc__
+            return
+        try:
+            print result.encode('utf-8')
+        except:
+            print result
     except Exception, e:
         print colorama.Fore.RED + str(e) + colorama.Fore.RESET
 
