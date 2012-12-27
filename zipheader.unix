@@ -4,7 +4,7 @@ if [ ! -x "$PYTHON" ] ; then
   echo "Python executable not found - cannot continue!"
   exit 1
 fi
-exec $PYTHON - $0 $@ << END_OF_PYTHON_CODE
+exec $PYTHON - $0 "$@" << END_OF_PYTHON_CODE
 import sys
 sys.path.insert(0, sys.argv[1])
 import todoistCli

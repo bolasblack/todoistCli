@@ -17,5 +17,12 @@ uninstall :
 	$(clean-folder)
 	rm /usr/sbin/todoist
 
+debug :
+	pip install -r requirements.txt
+	zip todoist.zip todoistCli.py todoistSDK.py
+	cat zipheader.unix todoist.zip > todoist
+	chmod +x todoist
+	$(clean-folder)
+
 clean :
 	$(clean-folder)
