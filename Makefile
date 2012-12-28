@@ -5,11 +5,17 @@ define clean-folder
 	-rm todoist.zip
 endef
 
-install :
+define build-file
 	pip install -r requirements.txt
-	zip todoist.zip todoistCli.py todoistSDK.py
+	python -c "import py_compile;py_compile.compile(r'todoistCli.py')"
+	python -c "import py_compile;py_compile.compile(r'todoistSDK.py')"
+	zip todoist.zip todoistCli.pyc todoistSDK.pyc
 	cat zipheader.unix todoist.zip > todoist
 	chmod +x todoist
+endef
+
+install :
+	$(build-file)
 	mv todoist /usr/sbin/
 	$(clean-folder)
 
@@ -18,11 +24,8 @@ uninstall :
 	rm /usr/sbin/todoist
 
 debug :
-	pip install -r requirements.txt
-	zip todoist.zip todoistCli.py todoistSDK.py
-	cat zipheader.unix todoist.zip > todoist
-	chmod +x todoist
-	$(clean-folder)
+	$(build-file)
+	#$(clean-folder)
 
 clean :
 	$(clean-folder)
