@@ -97,7 +97,7 @@ def showItemsList(todoist, projectId, isUncompletedItems=True): # [[[
 
 
 def aliasFilter(aliasName): # [[[
-    return getUserConfig().get('alias', {}).get(aliasName, aliasName)
+    return getUserConfig().get('alias', {}).get(aliasName)
 # ]]]
 
 
@@ -151,6 +151,21 @@ def getTodoist(**kwargs): # [[[
 # ]]]
 
 
+def parseProjectId(inputProjectId, defaultProjectId, projects): # [[[
+    if inputProjectId is None:
+        return defaultProjectId if defaultProjectId else projects[0]["id"]
+    aliasProjectId = aliasFilter(inputProjectId)
+    if aliasProjectId:
+        return aliasProjectId
+    filterRightProject = lambda projectInfo: projectInfo['name'] == inputProjectId.decode('utf-8')
+    rightProjects = filter(filterRightProject, projects)
+    if len(rightProjects):
+        return rightProjects[0]['id']
+    if inputProjectId.isdigit():
+        return inputProjectId
+# ]]]
+
+
 def actionByArgv(args): # [[[
     # 获取 token
     email = args['--token']
@@ -178,13 +193,9 @@ def actionByArgv(args): # [[[
     if args['--list']:
         return showProjectsList(projects)
 
-    defaultProjectId = config.get("default_project", None)
-    projectId = args['--proj']
     # 准备 projectId
-    if projectId is None:
-        projectId = defaultProjectId if defaultProjectId else projects[0]["id"]
-    else:
-        projectId = aliasFilter(projectId)
+    defaultProjectId = config.get("default_project", None)
+    projectId = parseProjectId(args['--proj'], defaultProjectId, projects)
 
     # add item
     itemContent = args['--add'] or args['<content>']
