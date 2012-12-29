@@ -218,7 +218,7 @@ def main(args):
         debugMode = True
         del args[0]
     try:
-        parsedArgs = docopt(__doc__, argv=args, help=True, version='0.0.1')
+        parsedArgs = docopt(__doc__, argv=args, help=True, version='0.0.2')
         if debugMode:
             print parsedArgs
 
